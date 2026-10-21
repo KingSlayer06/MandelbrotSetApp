@@ -61,7 +61,8 @@ struct MandelbrotView: View {
                 .boundingRect,
                 .float2(center),
                 .float(Float(horizontalSpan)),
-                .float(palette.rawValue)
+                .float(palette.rawValue),
+                .float(Float(iterationLimit))
             ))
             .onGeometryChange(for: CGFloat.self, of: \.size.width) { viewWidth = $0 }
             .gesture(panGesture)
@@ -73,16 +74,30 @@ struct MandelbrotView: View {
             .onReceive(Timer.publish(every: 1 / 60, on: .main, in: .common).autoconnect()) { _ in
                 guard isAutoZooming else { return }
 
-                let zoomStep = pow(baseZoomRate, zoomSpeed / 60)
-                horizontalSpan = max(horizontalSpan * zoomStep, 0.000_001)
-                currentSpan = horizontalSpan
+                let updatedSpan = horizontalSpan * pow(baseZoomRate, zoomSpeed / 60)
+
+                if updatedSpan <= minimumRenderableSpan {
+                    resetViewport()
+                } else {
+                    horizontalSpan = updatedSpan
+                    currentSpan = updatedSpan
+                }
             }
+    }
+
+    private var minimumRenderableSpan: CGFloat {
+        max(0.000_05, viewWidth * 0.000_000_15)
+    }
+
+    private var iterationLimit: Int {
+        let zoomLevels = log2(Double(initialSpan / max(horizontalSpan, minimumRenderableSpan)))
+        return min(1_024, 256 + Int(max(0, zoomLevels) * 64))
     }
 
     private var panGesture: some Gesture {
         DragGesture()
             .onChanged { value in
-//                isAutoZooming = false
+                // Keep automatic zoom running while the user repositions the view.
                 let unitsPerPoint = horizontalSpan / viewWidth
                 center = CGPoint(
                     x: currentCenter.x - value.translation.width * unitsPerPoint,
@@ -98,7 +113,7 @@ struct MandelbrotView: View {
         MagnifyGesture()
             .onChanged { value in
 //                isAutoZooming = false
-                horizontalSpan = min(max(currentSpan / value.magnification, 0.000_001), initialSpan)
+                horizontalSpan = min(max(currentSpan / value.magnification, minimumRenderableSpan), initialSpan)
             }
             .onEnded { _ in
                 currentSpan = horizontalSpan
@@ -131,10 +146,7 @@ struct MandelbrotView: View {
 
                 Button {
                     isAutoZooming = false
-                    center = initialCenter
-                    currentCenter = initialCenter
-                    horizontalSpan = initialSpan
-                    currentSpan = initialSpan
+                    resetViewport()
                     zoomSpeed = 1
                 } label: {
                     Label("Reset", systemImage: "arrow.counterclockwise")
@@ -172,6 +184,13 @@ struct MandelbrotView: View {
             .disabled(zoomSpeed == maximumZoomSpeed)
             .accessibilityLabel("Increase zoom speed")
         }
+    }
+
+    private func resetViewport() {
+        center = initialCenter
+        currentCenter = initialCenter
+        horizontalSpan = initialSpan
+        currentSpan = initialSpan
     }
 }
 

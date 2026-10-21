@@ -23,8 +23,8 @@ float3 colourRamp(float position, float3 first, float3 second, float3 third, flo
     return mix(third, fourth, (t - 2.0 / 3.0) * 3.0);
 }
 
-half3 palette(int iterations, float paletteIndex) {
-    float phase = 0.15 * float(iterations);
+half3 palette(float iterations, float paletteIndex) {
+    float phase = 0.15 * iterations;
 
     if (paletteIndex < 0.5) {
         return half3(
@@ -55,7 +55,7 @@ half3 palette(int iterations, float paletteIndex) {
         return half3(shade);
     }
 
-    float rampPosition = fract(float(iterations) * 0.022);
+    float rampPosition = fract(iterations * 0.022);
 
     if (paletteIndex < 4.5) {
         return half3(colourRamp(rampPosition,
@@ -116,7 +116,8 @@ half4 mandelbrot(
       float4 bounds,
       float2 center,
       float horizontalSpan,
-      float paletteIndex
+      float paletteIndex,
+      float iterationLimit
 ) {
     float2 size = bounds.zw;
     float2 offset = position - bounds.xy - size * 0.5;
@@ -125,7 +126,7 @@ half4 mandelbrot(
     float2 c = center + offset * unitsPerPoint;
     
     float2 z = float2(0.0, 0.0);
-    const int maxIterations = 256;
+    int maxIterations = int(iterationLimit);
     int iterations = 0;
     
     for (; iterations < maxIterations; iterations++) {
@@ -143,5 +144,7 @@ half4 mandelbrot(
         return half4(0.0h, 0.0h, 0.0h, 1.0h);
     }
     
-    return half4(palette(iterations, paletteIndex), 1.0h);
+    float escapeMagnitude = length(z);
+    float smoothIterations = float(iterations) + 1.0 - log2(log2(escapeMagnitude));
+    return half4(palette(smoothIterations, paletteIndex), 1.0h);
 }
