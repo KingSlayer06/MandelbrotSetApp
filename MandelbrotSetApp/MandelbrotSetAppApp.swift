@@ -11,7 +11,7 @@ import SwiftUI
 struct MandelbrotSetAppApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MandelbrotView()
         }
     }
 }
