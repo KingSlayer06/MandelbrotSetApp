@@ -23,6 +23,7 @@ struct MandelbrotView: View {
     @State private var currentSpan: CGFloat = 5.5
     @State private var palette: MandelbrotPalette = .aurora
     @State private var isAutoZooming = false
+    @State private var isZoomingOut = false
     @State private var zoomSpeed: CGFloat = 1
     
     var body: some View {
@@ -34,10 +35,19 @@ struct MandelbrotView: View {
         .onReceive(Timer.publish(every: 1 / 60, on: .main, in: .common).autoconnect()) { _ in
             guard isAutoZooming else { return }
 
-            let updatedSpan = horizontalSpan * pow(baseZoomRate, zoomSpeed / 60)
+            let zoomStep = pow(baseZoomRate, zoomSpeed / 60)
+            let updatedSpan = isZoomingOut
+                ? horizontalSpan / zoomStep
+                : horizontalSpan * zoomStep
 
             if updatedSpan <= minimumRenderableSpan {
-                resetViewport()
+                horizontalSpan = minimumRenderableSpan
+                currentSpan = minimumRenderableSpan
+                isZoomingOut = true
+            } else if updatedSpan >= initialSpan {
+                horizontalSpan = initialSpan
+                currentSpan = initialSpan
+                isZoomingOut = false
             } else {
                 horizontalSpan = updatedSpan
                 currentSpan = updatedSpan
@@ -57,16 +67,14 @@ struct MandelbrotView: View {
             .onGeometryChange(for: CGFloat.self, of: \.size.width) { viewWidth = $0 }
             .gesture(panGesture)
             .simultaneousGesture(magnificationGesture)
-            .overlay(alignment: .topLeading) {
-                palettePicker
-                    .padding(.leading, 16)
-                    .padding(.top, 12)
-                    .safeAreaPadding(.top)
-            }
     }
 
     @ToolbarContentBuilder
     private var zoomToolbar: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) {
+            palettePicker
+        }
+
         ToolbarItem {
             playPauseButton
         }
@@ -157,8 +165,6 @@ struct MandelbrotView: View {
             }
         }
         .pickerStyle(.menu)
-        .padding(5)
-        .glassEffect(.regular.interactive(), in: Capsule())
     }
 
     private func resetViewport() {
@@ -166,6 +172,7 @@ struct MandelbrotView: View {
         currentCenter = initialCenter
         horizontalSpan = initialSpan
         currentSpan = initialSpan
+        isZoomingOut = false
     }
 }
 

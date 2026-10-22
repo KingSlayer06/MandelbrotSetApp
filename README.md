@@ -16,7 +16,7 @@ Learn more on [Wikipedia](https://en.wikipedia.org/wiki/Mandelbrot_set).
 - Choose from ten colour palettes.
 - Play, pause, reset, and change automatic-zoom speed.
 - Supports the iPhone Duo right-side toolbar for controls using the new SwiftUI APIs.
-- Restarts automatic zoom before GPU `float` precision causes blocky artefacts.
+- Reverses automatic zoom before GPU `float` precision causes blocky artefacts.
 
 ## How it works
 
