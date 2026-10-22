@@ -9,7 +9,13 @@
 #include <SwiftUI/SwiftUI_Metal.h>
 using namespace metal;
 
-float3 colourRamp(float position, float3 first, float3 second, float3 third, float3 fourth) {
+float3 colourRamp(
+       float position,
+       float3 first,
+       float3 second,
+       float3 third,
+       float3 fourth
+) {
     float t = clamp(position, 0.0, 1.0);
 
     if (t < 1.0 / 3.0) {

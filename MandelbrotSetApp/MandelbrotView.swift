@@ -9,36 +9,6 @@ import SwiftUI
 import Combine
 import Foundation
 
-private enum MandelbrotPalette: Float, CaseIterable, Identifiable {
-    case aurora
-    case ocean
-    case sunset
-    case monochrome
-    case glacier
-    case ember
-    case orchid
-    case forest
-    case sepia
-    case neon
-
-    var id: Self { self }
-
-    var name: String {
-        switch self {
-        case .aurora: "Aurora"
-        case .ocean: "Ocean"
-        case .sunset: "Sunset"
-        case .monochrome: "Monochrome"
-        case .glacier: "Glacier"
-        case .ember: "Ember"
-        case .orchid: "Orchid"
-        case .forest: "Forest"
-        case .sepia: "Sepia"
-        case .neon: "Neon"
-        }
-    }
-}
-
 struct MandelbrotView: View {
     private let initialCenter = CGPoint(x: -0.6, y: 0.0)
     private let initialSpan: CGFloat = 5.5
@@ -68,8 +38,23 @@ struct MandelbrotView: View {
             .gesture(panGesture)
             .simultaneousGesture(magnificationGesture)
             .ignoresSafeArea()
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                controls
+            .overlay(alignment: .topLeading) {
+                palettePicker
+                    .padding(.leading, 16)
+                    .padding(.top, 12)
+                    .safeAreaPadding(.top)
+            }
+            .overlay(alignment: .bottomLeading) {
+                playbackControls
+                    .padding(.leading, 16)
+                    .padding(.bottom, 12)
+                    .safeAreaPadding(.bottom)
+            }
+            .overlay(alignment: .bottomTrailing) {
+                zoomSpeedControls
+                    .padding(.trailing, 16)
+                    .padding(.bottom, 12)
+                    .safeAreaPadding(.bottom)
             }
             .onReceive(Timer.publish(every: 1 / 60, on: .main, in: .common).autoconnect()) { _ in
                 guard isAutoZooming else { return }
@@ -97,7 +82,6 @@ struct MandelbrotView: View {
     private var panGesture: some Gesture {
         DragGesture()
             .onChanged { value in
-                // Keep automatic zoom running while the user repositions the view.
                 let unitsPerPoint = horizontalSpan / viewWidth
                 center = CGPoint(
                     x: currentCenter.x - value.translation.width * unitsPerPoint,
@@ -120,68 +104,66 @@ struct MandelbrotView: View {
             }
     }
 
-    private var controls: some View {
-        VStack(spacing: 10) {
-            HStack {
-                Picker("Colour palette", selection: $palette) {
-                    ForEach(MandelbrotPalette.allCases) { palette in
-                        Text(palette.name).tag(palette)
-                    }
-                }
-                .pickerStyle(.menu)
-
-                Spacer(minLength: 0)
-
-                zoomSpeedControls
+    private var palettePicker: some View {
+        Picker("Colour palette", selection: $palette) {
+            ForEach(MandelbrotPalette.allCases) { palette in
+                Text(palette.name).tag(palette)
             }
+        }
+        .pickerStyle(.menu)
+        .padding(5)
+        .glassEffect(.regular.interactive(), in: Capsule())
+    }
 
-            HStack(spacing: 12) {
+    private var playbackControls: some View {
+        GlassEffectContainer(spacing: 8) {
+            HStack(spacing: 8) {
                 Button {
                     isAutoZooming.toggle()
                 } label: {
-                    Label(isAutoZooming ? "Pause" : "Play", systemImage: isAutoZooming ? "pause.fill" : "play.fill")
+                    Image(systemName: isAutoZooming ? "pause.fill" : "play.fill")
+                        .frame(width: 22, height: 22)
                 }
-                .buttonStyle(.borderedProminent)
-                .accessibilityHint(isAutoZooming ? "Pauses automatic zoom" : "Starts automatic zoom")
+                .buttonStyle(.glass)
+                .accessibilityLabel(isAutoZooming ? "Pause automatic zoom" : "Play automatic zoom")
 
                 Button {
                     isAutoZooming = false
                     resetViewport()
                     zoomSpeed = 1
                 } label: {
-                    Label("Reset", systemImage: "arrow.counterclockwise")
+                    Image(systemName: "arrow.counterclockwise")
+                        .frame(width: 22, height: 22)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.glass)
+                .accessibilityLabel("Reset viewport and zoom speed")
             }
         }
-        .padding(.horizontal)
-        .padding(.vertical, 12)
     }
 
     private var zoomSpeedControls: some View {
-        HStack(spacing: 4) {
-            Button {
-                zoomSpeed = max(zoomSpeed - 0.25, minimumZoomSpeed)
-            } label: {
-                Image(systemName: "minus")
-            }
-            .buttonStyle(.bordered)
-            .disabled(zoomSpeed == minimumZoomSpeed)
-            .accessibilityLabel("Decrease zoom speed")
+        GlassEffectContainer(spacing: 8) {
+            HStack(spacing: 8) {
+                Button {
+                    zoomSpeed = max(zoomSpeed - 0.25, minimumZoomSpeed)
+                } label: {
+                    Image(systemName: "minus")
+                        .frame(width: 22, height: 22)
+                }
+                .buttonStyle(.glass)
+                .disabled(zoomSpeed == minimumZoomSpeed)
+                .accessibilityLabel("Decrease zoom speed")
 
-            Text("\(zoomSpeed, specifier: "%.2g")×")
-                .font(.subheadline.monospacedDigit())
-                .frame(minWidth: 32)
-                .accessibilityLabel("Zoom speed \(zoomSpeed, specifier: "%.2g") times")
-
-            Button {
-                zoomSpeed = min(zoomSpeed + 0.25, maximumZoomSpeed)
-            } label: {
-                Image(systemName: "plus")
+                Button {
+                    zoomSpeed = min(zoomSpeed + 0.25, maximumZoomSpeed)
+                } label: {
+                    Image(systemName: "plus")
+                        .frame(width: 22, height: 22)
+                }
+                .buttonStyle(.glass)
+                .disabled(zoomSpeed == maximumZoomSpeed)
+                .accessibilityLabel("Increase zoom speed")
             }
-            .buttonStyle(.bordered)
-            .disabled(zoomSpeed == maximumZoomSpeed)
-            .accessibilityLabel("Increase zoom speed")
         }
     }
 
