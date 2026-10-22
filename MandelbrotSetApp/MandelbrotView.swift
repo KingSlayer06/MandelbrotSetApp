@@ -156,7 +156,6 @@ struct MandelbrotView: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 12)
-        .background(.ultraThinMaterial)
     }
 
     private var zoomSpeedControls: some View {
